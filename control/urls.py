@@ -15,5 +15,9 @@ urlpatterns = [
     # Домашние задания
     path('homework/', views.homework_list, name='homework_list'),
     path('homework/add/', views.add_homework, name='add_homework'),
+    path('homework/<int:homework_id>/', views.homework_detail, name='homework_detail'),
     path('homework/<int:homework_id>/submit/', views.submit_homework, name='submit_homework'),
+    
+    # Оценка сданных работ (добавь эту строку)
+    path('submission/<int:submission_id>/grade/', views.grade_submission, name='grade_submission'),
 ]

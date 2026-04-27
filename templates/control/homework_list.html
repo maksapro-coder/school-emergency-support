@@ -48,12 +48,12 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="badge bg-info">{{ homework.submissions.count }} сдано</span>
                             <div>
-                                <a href="#" class="btn btn-sm btn-outline-primary">
+                                <a href="{% url 'control:homework_detail' homework.id %}" class="btn btn-sm btn-outline-primary">
                                     <i class="fas fa-info-circle"></i> Подробнее
                                 </a>
                                 {% if user.is_student %}
-                                <a href="#" class="btn btn-sm btn-success">
-                                    <i class="fas fa-upload"></i> Сдать
+                                <a href="{% url 'control:submit_homework' homework.id %}" class="btn btn-sm btn-success">
+                                    <i class="fas fa-upload me-1"></i>Сдать
                                 </a>
                                 {% endif %}
                             </div>

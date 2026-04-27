@@ -230,32 +230,18 @@ def add_homework(request):
 def homework_detail(request, homework_id):
     """Детальная информация о домашнем задании"""
     homework = get_object_or_404(
-        Homework.objects.select_related(
-            'lesson', 'lesson__subject', 'lesson__class_group', 'created_by'
-        ),
+        Homework.objects.select_related('lesson', 'lesson__subject', 'lesson__class_group', 'created_by'),
         id=homework_id
     )
     
-    # Проверяем доступ
+    # Проверка доступа для ученика
     if request.user.is_student():
-        # Проверяем, учится ли ученик в классе, для которого задано задание
-        if not request.user.student_classes.filter(class_group=homework.lesson.class_group).exists():
+        student_classes = request.user.student_classes.filter(class_group=homework.lesson.class_group)
+        if not student_classes.exists():
             messages.error(request, 'У вас нет доступа к этому заданию')
             return redirect('control:homework_list')
     
-    # Получаем сдачи задания
-    submissions = homework.submissions.select_related('student').all()
-    
-    # Проверяем, сдал ли текущий ученик это задание
-    user_submission = None
-    if request.user.is_student():
-        user_submission = submissions.filter(student=request.user).first()
-    
-    return render(request, 'control/homework_detail.html', {
-        'homework': homework,
-        'submissions': submissions,
-        'user_submission': user_submission
-    })
+    return render(request, 'control/homework_detail.html', {'homework': homework})
 
 @login_required
 def submit_homework(request, homework_id):

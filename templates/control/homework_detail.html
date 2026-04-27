@@ -22,10 +22,10 @@
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <strong>Предмет:</strong> {{ homework.lesson.subject.name }}<br>
-                    <strong>Класс:</strong> {{ homework.lesson.class_group.grade }}{{ homework.lesson.class_group.letter }}<br>
-                    <strong>Учитель:</strong> {{ homework.created_by.get_full_name }}<br>
-                    <strong>Срок сдачи:</strong> {{ homework.due_date|date:"d.m.Y H:i" }}
+                    <p><strong>Предмет:</strong> {{ homework.lesson.subject.name }}</p>
+                    <p><strong>Класс:</strong> {{ homework.lesson.class_group.grade }}{{ homework.lesson.class_group.letter }}</p>
+                    <p><strong>Учитель:</strong> {{ homework.created_by.get_full_name }}</p>
+                    <p><strong>Срок сдачи:</strong> {{ homework.due_date|date:"d.m.Y H:i" }}</p>
                 </div>
                 
                 <hr>
@@ -42,48 +42,50 @@
             </div>
         </div>
         
-        {% if user.is_teacher or user.is_admin %}
+        {% if user.is_teacher %}
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-0">Сданные работы ({{ submissions.count }})</h5>
+                <h5 class="card-title mb-0">Сданные работы</h5>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Ученик</th>
-                                <th>Дата сдачи</th>
-                                <th>Оценка</th>
-                                <th>Действия</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for submission in submissions %}
-                            <tr>
-                                <td>{{ submission.student.get_full_name }}</td>
-                                <td>{{ submission.submitted_at|date:"d.m.Y H:i" }}</td>
-                                <td>
-                                    {% if submission.grade %}
-                                        <span class="badge bg-success">{{ submission.grade }}</span>
-                                    {% else %}
-                                        <span class="badge bg-warning">Не оценено</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{% url 'control:grade_submission' submission.id %}" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-star"></i> Оценить
-                                    </a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="4" class="text-center">Пока нет сданных работ</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                {% with submissions=homework.submissions.all %}
+                    {% if submissions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Ученик</th>
+                                    <th>Дата сдачи</th>
+                                    <th>Оценка</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for submission in submissions %}
+                                <tr>
+                                    <td>{{ submission.student.get_full_name }}</td>
+                                    <td>{{ submission.submitted_at|date:"d.m.Y H:i" }}</td>
+                                    <td>
+                                        {% if submission.grade %}
+                                            <span class="badge bg-success">{{ submission.grade }}</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Не оценено</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'control:grade_submission' submission.id %}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-star"></i> Оценить
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">Пока нет сданных работ</p>
+                    {% endif %}
+                {% endwith %}
             </div>
         </div>
         {% endif %}
@@ -91,36 +93,51 @@
     
     <div class="col-md-4">
         {% if user.is_student %}
-            {% if user_submission %}
-            <div class="card mb-4">
-                <div class="card-header bg-success text-white">
-                    <h5 class="card-title mb-0">Ваша работа</h5>
-                </div>
-                <div class="card-body">
-                    <p><strong>Дата сдачи:</strong> {{ user_submission.submitted_at|date:"d.m.Y H:i" }}</p>
-                    {% if user_submission.grade %}
-                        <p><strong>Оценка:</strong> <span class="badge bg-success fs-6">{{ user_submission.grade }}</span></p>
+            {% with user_submission=homework.submissions.all|dictsort:"student.id" %}
+                {% for sub in user_submission %}
+                    {% if sub.student.id == user.id %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="card-title mb-0">Ваша работа</h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Дата сдачи:</strong> {{ sub.submitted_at|date:"d.m.Y H:i" }}</p>
+                            {% if sub.grade %}
+                                <p><strong>Оценка:</strong> <span class="badge bg-success fs-6">{{ sub.grade }}</span></p>
+                            {% endif %}
+                            {% if sub.feedback %}
+                                <p><strong>Отзыв:</strong> {{ sub.feedback }}</p>
+                            {% endif %}
+                            <a href="{{ sub.submission_file.url }}" class="btn btn-outline-primary w-100" download>
+                                <i class="fas fa-download me-2"></i>Скачать работу
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="card">
+                        <div class="card-header bg-warning">
+                            <h5 class="card-title mb-0">Сдать задание</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <a href="{% url 'control:submit_homework' homework.id %}" class="btn btn-success btn-lg">
+                                <i class="fas fa-upload me-2"></i>Отправить работу
+                            </a>
+                        </div>
+                    </div>
                     {% endif %}
-                    {% if user_submission.feedback %}
-                        <p><strong>Отзыв:</strong> {{ user_submission.feedback }}</p>
-                    {% endif %}
-                    <a href="{{ user_submission.submission_file.url }}" class="btn btn-outline-primary w-100" download>
-                        <i class="fas fa-download me-2"></i>Скачать работу
-                    </a>
+                {% empty %}
+                <div class="card">
+                    <div class="card-header bg-warning">
+                        <h5 class="card-title mb-0">Сдать задание</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <a href="{% url 'control:submit_homework' homework.id %}" class="btn btn-success btn-lg">
+                            <i class="fas fa-upload me-2"></i>Отправить работу
+                        </a>
+                    </div>
                 </div>
-            </div>
-            {% else %}
-            <div class="card">
-                <div class="card-header bg-warning">
-                    <h5 class="card-title mb-0">Сдать задание</h5>
-                </div>
-                <div class="card-body">
-                    <a href="{% url 'control:submit_homework' homework.id %}" class="btn btn-success w-100">
-                        <i class="fas fa-upload me-2"></i>Загрузить работу
-                    </a>
-                </div>
-            </div>
-            {% endif %}
+                {% endfor %}
+            {% endwith %}
         {% endif %}
     </div>
 </div>
