@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ lesson.topic }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'classes:class_list' %}">Классы</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'classes:class_detail' lesson.class_group.id %}">{{ lesson.class_group.grade }}{{ lesson.class_group.letter }}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'classes:class_schedule' lesson.class_group.id %}">Расписание</a></li>
+                <li class="breadcrumb-item active">{{ lesson.topic|truncatechars:30 }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Детали урока
+                </h5>
+            </div>
+            <div class="card-body">
+                <h3>{{ lesson.topic }}</h3>
+                <p class="text-muted">{{ lesson.subject.name }} • {{ lesson.class_group.grade }}{{ lesson.class_group.letter }}</p>
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><i class="fas fa-user me-2"></i>Учитель: {{ lesson.teacher.get_full_name }}</p>
+                        <p><i class="fas fa-calendar me-2"></i>Дата: {{ lesson.date|date:"d.m.Y" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><i class="fas fa-clock me-2"></i>Время: {{ lesson.start_time|time:"H:i" }} - {{ lesson.end_time|time:"H:i" }}</p>
+                        <p>
+                            <i class="fas fa-circle me-2"></i>Статус: 
+                            {% if lesson.is_active %}
+                                <span class="badge bg-success">Идет сейчас</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Запланирован</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                
+                {% if lesson.description %}
+                <hr>
+                <h6>Описание:</h6>
+                <p>{{ lesson.description|linebreaks }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cog me-2"></i>Действия
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if lesson.is_active %}
+                    <a href="{% url 'classes:join_lesson' lesson.id %}" class="btn btn-success btn-lg">
+                        <i class="fas fa-video me-2"></i>Присоединиться к уроку
+                    </a>
+                    {% endif %}
+                    
+                    {% if user.is_teacher or user.is_admin %}
+                    <a href="{% url 'control:mark_attendance' lesson.id %}" class="btn btn-warning">
+                        <i class="fas fa-check-circle me-2"></i>Отметить посещаемость
+                    </a>
+                    <a href="{% url 'control:add_grade' lesson.id %}" class="btn btn-info">
+                        <i class="fas fa-star me-2"></i>Выставить оценки
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        {% if lesson.materials %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-download me-2"></i>Материалы
+                </h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ lesson.materials.url }}" class="btn btn-outline-primary w-100" download>
+                    <i class="fas fa-file-download me-2"></i>Скачать материалы
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

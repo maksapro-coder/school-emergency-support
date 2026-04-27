@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Оценка работы{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'control:homework_list' %}">Домашние задания</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'control:homework_detail' submission.homework.id %}">{{ submission.homework.title|truncatechars:30 }}</a></li>
+                <li class="breadcrumb-item active">Оценка работы</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Информация о работе</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Ученик:</strong> {{ submission.student.get_full_name }}</p>
+                <p><strong>Дата сдачи:</strong> {{ submission.submitted_at|date:"d.m.Y H:i" }}</p>
+                <p><strong>Комментарий ученика:</strong> {{ submission.comment|default:"—" }}</p>
+                
+                <hr>
+                
+                <a href="{{ submission.submission_file.url }}" class="btn btn-primary w-100" download>
+                    <i class="fas fa-download me-2"></i>Скачать работу
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Выставить оценку</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="grade" class="form-label">Оценка *</label>
+                        <select name="grade" id="grade" class="form-control" required>
+                            <option value="">Выберите оценку</option>
+                            <option value="5" {% if submission.grade == 5 %}selected{% endif %}>5 (Отлично)</option>
+                            <option value="4" {% if submission.grade == 4 %}selected{% endif %}>4 (Хорошо)</option>
+                            <option value="3" {% if submission.grade == 3 %}selected{% endif %}>3 (Удовлетворительно)</option>
+                            <option value="2" {% if submission.grade == 2 %}selected{% endif %}>2 (Неудовлетворительно)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="feedback" class="form-label">Отзыв</label>
+                        <textarea class="form-control" id="feedback" name="feedback" rows="4">{{ submission.feedback }}</textarea>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'control:homework_detail' submission.homework.id %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Назад
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Сохранить оценку
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

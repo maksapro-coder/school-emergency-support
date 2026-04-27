@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ class_group.grade }}{{ class_group.letter }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'classes:class_list' %}">Классы</a></li>
+                <li class="breadcrumb-item active">{{ class_group.grade }}{{ class_group.letter }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Информация о классе
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <th>Класс:</th>
+                        <td>{{ class_group.grade }}{{ class_group.letter }}</td>
+                    </tr>
+                    <tr>
+                        <th>Учебный год:</th>
+                        <td>{{ class_group.academic_year }}</td>
+                    </tr>
+                    <tr>
+                        <th>Количество учеников:</th>
+                        <td>{{ students.count }}</td>
+                    </tr>
+                    {% if class_group.class_teachers.exists %}
+                    <tr>
+                        <th>Классный руководитель:</th>
+                        <td>{{ class_group.class_teachers.first.teacher.get_full_name }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cog me-2"></i>Действия
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'classes:class_schedule' class_group.id %}" class="btn btn-success">
+                        <i class="fas fa-calendar-alt me-2"></i>Расписание
+                    </a>
+                    {% if user.is_teacher or user.is_admin %}
+                    <a href="{% url 'classes:create_lesson' class_group.id %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Создать урок
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users me-2"></i>Список учеников
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>ФИО</th>
+                                <th>Дата рождения</th>
+                                <th>Телефон</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student_class in students %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ student_class.student.get_full_name }}</td>
+                                <td>{{ student_class.student.date_of_birth|default:"—" }}</td>
+                                <td>{{ student_class.student.phone|default:"—" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4">
+                                    <p class="text-muted mb-0">В классе нет учеников</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

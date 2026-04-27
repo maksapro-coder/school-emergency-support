@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Создание урока{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'classes:class_list' %}">Классы</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'classes:class_detail' class_group.id %}">{{ class_group.grade }}{{ class_group.letter }}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'classes:class_schedule' class_group.id %}">Расписание</a></li>
+                <li class="breadcrumb-item active">Создание урока</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>Создание нового урока
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Предмет *</label>
+                        <select name="subject" id="subject" class="form-control" required>
+                            <option value="">Выберите предмет</option>
+                            {% for subject in subjects %}
+                            <option value="{{ subject.id }}">{{ subject.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="topic" class="form-label">Тема урока *</label>
+                        <input type="text" class="form-control" id="topic" name="topic" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Описание</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="date" class="form-label">Дата *</label>
+                            <input type="date" class="form-control" id="date" name="date" value="{{ tomorrow }}" required>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="start_time" class="form-label">Время начала *</label>
+                            <input type="time" class="form-control" id="start_time" name="start_time" value="09:00" required>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="end_time" class="form-label">Время окончания *</label>
+                            <input type="time" class="form-control" id="end_time" name="end_time" value="09:45" required>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'classes:class_schedule' class_group.id %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Назад
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Создать урок
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

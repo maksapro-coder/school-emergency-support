@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block title %}Отчет по успеваемости{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        color: white;
+    }
+    .stat-card h3 {
+        margin: 0;
+        font-size: 2rem;
+    }
+    .stat-card p {
+        margin: 0;
+        opacity: 0.9;
+    }
+    .filter-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .grade-badge {
+        font-size: 1.2rem;
+        width: 40px;
+        height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: white;
+        font-weight: bold;
+    }
+    .grade-5 { background: #28a745; }
+    .grade-4 { background: #17a2b8; }
+    .grade-3 { background: #ffc107; color: #000; }
+    .grade-2 { background: #dc3545; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Отчет по успеваемости</h1>
+            <div class="btn-group">
+                <a href="{% url 'reports:export_progress_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success">
+                    <i class="fas fa-file-excel me-2"></i>Excel
+                </a>
+                <a href="{% url 'reports:export_progress_pdf' %}?{{ request.GET.urlencode }}" class="btn btn-danger">
+                    <i class="fas fa-file-pdf me-2"></i>PDF
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Фильтры -->
+<div class="row">
+    <div class="col-12">
+        <div class="filter-card">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="class_id" class="form-label">Класс</label>
+                    <select name="class_id" id="class_id" class="form-control">
+                        <option value="">Все классы</option>
+                        {% for class in classes %}
+                        <option value="{{ class.id }}" {% if selected_class == class.id|stringformat:"s" %}selected{% endif %}>
+                            {{ class.grade }}{{ class.letter }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="subject_id" class="form-label">Предмет</label>
+                    <select name="subject_id" id="subject_id" class="form-control">
+                        <option value="">Все предметы</option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject.id }}" {% if selected_subject == subject.id|stringformat:"s" %}selected{% endif %}>
+                            {{ subject.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label for="student_id" class="form-label">Ученик</label>
+                    <select name="student_id" id="student_id" class="form-control">
+                        <option value="">Все ученики</option>
+                        {% for student in students %}
+                        <option value="{{ student.id }}" {% if selected_student == student.id|stringformat:"s" %}selected{% endif %}>
+                            {{ student.get_full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label for="period" class="form-label">Период</label>
+                    <select name="period" id="period" class="form-control">
+                        <option value="week" {% if selected_period == 'week' %}selected{% endif %}>Неделя</option>
+                        <option value="month" {% if selected_period == 'month' %}selected{% endif %}>Месяц</option>
+                        <option value="quarter" {% if selected_period == 'quarter' %}selected{% endif %}>Квартал</option>
+                        <option value="year" {% if selected_period == 'year' %}selected{% endif %}>Год</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Применить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row">
+    <div class="col-md-4">
+        <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <p>Всего оценок</p>
+            <h3>{{ total_grades }}</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+            <p>Средний балл</p>
+            <h3>{{ avg_grade }}</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card" style="background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);">
+            <p>Качество знаний</p>
+            <h3>{% widthratio grade_counts.5|add:grade_counts.4 total_grades 100 %}%</h3>
+        </div>
+    </div>
+</div>
+
+<!-- Распределение оценок -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Распределение оценок</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-around align-items-center">
+                    <div class="text-center">
+                        <div class="grade-badge grade-5 mb-2">5</div>
+                        <h4>{{ grade_counts.5 }}</h4>
+                        <small class="text-muted">отлично</small>
+                    </div>
+                    <div class="text-center">
+                        <div class="grade-badge grade-4 mb-2">4</div>
+                        <h4>{{ grade_counts.4 }}</h4>
+                        <small class="text-muted">хорошо</small>
+                    </div>
+                    <div class="text-center">
+                        <div class="grade-badge grade-3 mb-2">3</div>
+                        <h4>{{ grade_counts.3 }}</h4>
+                        <small class="text-muted">удовл.</small>
+                    </div>
+                    <div class="text-center">
+                        <div class="grade-badge grade-2 mb-2">2</div>
+                        <h4>{{ grade_counts.2 }}</h4>
+                        <small class="text-muted">неуд.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Успеваемость по предметам</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Предмет</th>
+                                <th>Ср. балл</th>
+                                <th>Кол-во</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for subject in subject_stats %}
+                            <tr>
+                                <td>{{ subject.name }}</td>
+                                <td>
+                                    <span class="badge {% if subject.avg >= 4 %}bg-success{% elif subject.avg >= 3 %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ subject.avg }}
+                                    </span>
+                                </td>
+                                <td>{{ subject.count }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center">Нет данных</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Детальная таблица -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Детальная информация</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Ученик</th>
+                                <th>Предмет</th>
+                                <th>Оценка</th>
+                                <th>Тип</th>
+                                <th>Учитель</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for grade in grades %}
+                            <tr>
+                                <td>{{ grade.date|date:"d.m.Y" }}</td>
+                                <td>{{ grade.student.get_full_name }}</td>
+                                <td>{{ grade.subject }}</td>
+                                <td>
+                                    <span class="badge grade-{{ grade.grade }} grade-badge" style="width: 30px; height: 30px; font-size: 1rem;">
+                                        {{ grade.grade }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if grade.grade_type == 'current' %}
+                                        Текущая
+                                    {% elif grade.grade_type == 'quarter' %}
+                                        Четвертная
+                                    {% elif grade.grade_type == 'final' %}
+                                        Итоговая
+                                    {% endif %}
+                                </td>
+                                <td>{{ grade.teacher.get_full_name|default:"—" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <i class="fas fa-star fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">Нет данных за выбранный период</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

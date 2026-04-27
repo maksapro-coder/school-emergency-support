@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Профиль пользователя{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Профиль пользователя</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-circle me-2"></i>Аватар
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" alt="Аватар" class="img-fluid rounded-circle mb-3" style="max-width: 200px;">
+                {% else %}
+                    <div class="display-1 text-muted mb-3">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                {% endif %}
+                
+                <h4>{{ user.get_full_name }}</h4>
+                <p class="text-muted">
+                    {% if user.role == 'admin' %}
+                        <span class="badge bg-danger">Администратор</span>
+                    {% elif user.role == 'teacher' %}
+                        <span class="badge bg-success">Учитель</span>
+                    {% else %}
+                        <span class="badge bg-info">Ученик</span>
+                    {% endif %}
+                </p>
+                
+                <a href="{% url 'users:edit_profile' %}" class="btn btn-primary">
+                    <i class="fas fa-edit me-2"></i>Редактировать профиль
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Личная информация
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <th style="width: 200px;">Имя пользователя:</th>
+                        <td>{{ user.username }}</td>
+                    </tr>
+                    <tr>
+                        <th>Фамилия:</th>
+                        <td>{{ user.last_name|default:"—" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Имя:</th>
+                        <td>{{ user.first_name|default:"—" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Отчество:</th>
+                        <td>{{ user.patronymic|default:"—" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>{{ user.email|default:"—" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Телефон:</th>
+                        <td>{{ user.phone|default:"—" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Роль:</th>
+                        <td>
+                            {% if user.role == 'admin' %}
+                                Администратор
+                            {% elif user.role == 'teacher' %}
+                                Учитель
+                            {% else %}
+                                Ученик
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Последний вход:</th>
+                        <td>{{ user.last_login|date:"d.m.Y H:i"|default:"—" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Дата регистрации:</th>
+                        <td>{{ user.date_joined|date:"d.m.Y H:i" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        {% if user.is_teacher %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Статистика учителя
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <h3>{{ total_lessons|default:"0" }}</h3>
+                        <p class="text-muted">Уроков проведено</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <h3>{{ total_students|default:"0" }}</h3>
+                        <p class="text-muted">Учеников</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <h3>{{ avg_grade|default:"0"|floatformat:1 }}</h3>
+                        <p class="text-muted">Средний балл</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if user.is_student %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-graduation-cap me-2"></i>Успеваемость
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 text-center">
+                        <h3>{{ avg_grade|default:"0"|floatformat:1 }}</h3>
+                        <p class="text-muted">Средний балл</p>
+                    </div>
+                    <div class="col-md-6 text-center">
+                        <h3>{{ attendance_rate|default:"0" }}%</h3>
+                        <p class="text-muted">Посещаемость</p>
+                    </div>
+                </div>
+                
+                <h6 class="mt-4">Последние оценки:</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Предмет</th>
+                                <th>Оценка</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for grade in recent_grades %}
+                            <tr>
+                                <td>{{ grade.date|date:"d.m.Y" }}</td>
+                                <td>{{ grade.subject }}</td>
+                                <td>
+                                    <span class="badge bg-{% if grade.grade >= 4 %}success{% elif grade.grade >= 3 %}warning{% else %}danger{% endif %}">
+                                        {{ grade.grade }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center">Нет оценок</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

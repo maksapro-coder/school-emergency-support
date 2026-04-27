@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Панель администратора{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Панель администратора</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-users text-primary me-2"></i>
+                    Управление пользователями
+                </h5>
+                <p class="card-text">Добавление, редактирование и удаление пользователей</p>
+                <a href="{% url 'administration:user_list' %}" class="btn btn-primary">Перейти</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-door-open text-success me-2"></i>
+                    Управление классами
+                </h5>
+                <p class="card-text">Создание и редактирование классов, расписания</p>
+                <a href="{% url 'administration:admin_class_list' %}" class="btn btn-success">Перейти</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-chart-bar text-info me-2"></i>
+                    Отчеты
+                </h5>
+                <p class="card-text">Просмотр отчетов по посещаемости и успеваемости</p>
+                <a href="{% url 'reports:attendance_report' %}" class="btn btn-info">Перейти</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    Режим ЧС
+                </h5>
+                <p class="card-text">Управление режимом чрезвычайной ситуации</p>
+                <a href="{% url 'administration:emergency_settings' %}" class="btn btn-warning">Настроить</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-calendar text-danger me-2"></i>
+                    Расписание
+                </h5>
+                <p class="card-text">Просмотр и редактирование расписания</p>
+                <a href="{% url 'classes:class_list' %}" class="btn btn-danger">Перейти</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-school text-secondary me-2"></i>
+                    Настройки школы
+                </h5>
+                <p class="card-text">Настройка информации о школе</p>
+                <a href="{% url 'administration:school_settings' %}" class="btn btn-secondary">Настроить</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Создание класса{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'administration:admin_class_list' %}">Управление классами</a></li>
+                <li class="breadcrumb-item active">Создание класса</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Создание нового класса
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="grade" class="form-label">Класс *</label>
+                            <select name="grade" id="grade" class="form-control" required>
+                                <option value="">Выберите класс</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="letter" class="form-label">Буква класса *</label>
+                            <input type="text" class="form-control" id="letter" name="letter" maxlength="2" required>
+                            <small class="text-muted">Например: А, Б, В</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="academic_year" class="form-label">Учебный год *</label>
+                        <select name="academic_year" id="academic_year" class="form-control" required>
+                            <option value="">Выберите учебный год</option>
+                            {% for year in academic_years %}
+                            <option value="{{ year }}">{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'administration:admin_class_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Назад
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Создать класс
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

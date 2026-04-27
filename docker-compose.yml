@@ -1,0 +1,79 @@
+services:
+  # PostgreSQL база данных
+  db:
+    image: postgres:15-alpine
+    container_name: school_db
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=school_emergency
+      - POSTGRES_USER=school_user
+      - POSTGRES_PASSWORD=school_password
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U school_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis для WebSocket и кэширования
+  redis:
+    image: redis:7-alpine
+    container_name: school_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Django приложение
+  web:
+    build: .
+    container_name: school_web
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate &&
+             daphne -b 0.0.0.0 -p 8000 config.asgi:application"
+    volumes:
+      - .:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - DATABASE_URL=postgresql://school_user:school_password@db:5432/school_emergency
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Nginx для обслуживания статики и проксирования
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: school_nginx
+    restart: unless-stopped
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - static_volume:/static
+      - media_volume:/media
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:

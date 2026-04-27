@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Управление классами{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Управление классами</h1>
+            <a href="{% url 'administration:create_class' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Создать класс
+            </a>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Класс</th>
+                                <th>Учебный год</th>
+                                <th>Количество учеников</th>
+                                <th>Классный руководитель</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for class in classes %}
+                            <tr>
+                                <td>{{ class.grade }}{{ class.letter }}</td>
+                                <td>{{ class.academic_year }}</td>
+                                <td>{{ class.students.count }}</td>
+                                <td>
+                                    {% for ct in class.class_teachers.all %}
+                                        {{ ct.teacher.get_full_name }}{% if not forloop.last %}, {% endif %}
+                                    {% empty %}
+                                        <span class="text-muted">Не назначен</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'administration:class_students' class.id %}" 
+                                           class="btn btn-sm btn-info" title="Ученики">
+                                            <i class="fas fa-users"></i>
+                                        </a>
+                                        <a href="{% url 'administration:edit_class' class.id %}" 
+                                           class="btn btn-sm btn-warning" title="Редактировать">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'classes:class_schedule' class.id %}" 
+                                           class="btn btn-sm btn-success" title="Расписание">
+                                            <i class="fas fa-calendar"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4">
+                                    <p class="text-muted mb-0">Нет созданных классов</p>
+                                    <a href="{% url 'administration:create_class' %}" class="btn btn-primary mt-2">
+                                        Создать первый класс
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

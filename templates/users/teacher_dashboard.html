@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+
+{% block title %}Панель учителя{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Панель учителя</h1>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Мои уроки</h6>
+                        <h2 class="mb-0">{{ total_lessons }}</h2>
+                    </div>
+                    <i class="fas fa-video fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Учеников</h6>
+                        <h2 class="mb-0">{{ total_students }}</h2>
+                    </div>
+                    <i class="fas fa-users fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Средний балл</h6>
+                        <h2 class="mb-0">{{ avg_grade|floatformat:1 }}</h2>
+                    </div>
+                    <i class="fas fa-star fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Посещаемость</h6>
+                        <h2 class="mb-0">{{ attendance_rate }}%</h2>
+                    </div>
+                    <i class="fas fa-calendar-check fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Ближайшие уроки -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clock text-primary me-2"></i>
+                    Ближайшие уроки
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if upcoming_lessons %}
+                <div class="list-group">
+                    {% for lesson in upcoming_lessons %}
+                    <a href="{% url 'classes:lesson_detail' lesson.id %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ lesson.subject.name }} - {{ lesson.topic }}</h6>
+                            <small class="text-muted">{{ lesson.date|date:"d.m" }} {{ lesson.start_time|time:"H:i" }}</small>
+                        </div>
+                        <small class="text-muted">{{ lesson.class_group }}</small>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-3">Нет ближайших уроков</p>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'classes:class_list' %}" class="btn btn-primary btn-sm">Все уроки</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Непроверенные работы -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tasks text-warning me-2"></i>
+                    Ожидают проверки
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if pending_homeworks %}
+                <div class="list-group">
+                    {% for submission in pending_homeworks %}
+                    <a href="{% url 'control:grade_submission' submission.id %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ submission.student.get_full_name }}</h6>
+                            <small class="text-muted">{{ submission.submitted_at|date:"d.m H:i" }}</small>
+                        </div>
+                        <small>{{ submission.homework.title }}</small>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-3">Нет работ на проверку</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Мои классы -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-door-open text-success me-2"></i>
+                    Мои классы
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for class in my_classes %}
+                    <div class="col-md-6 mb-2">
+                        <div class="card">
+                            <div class="card-body py-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>{{ class.grade }}{{ class.letter }}</span>
+                                    <a href="{% url 'classes:class_detail' class.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">Нет классов</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Быстрые действия -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt text-danger me-2"></i>
+                    Быстрые действия
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'classes:create_lesson' 1 %}" class="btn btn-outline-primary">
+                        <i class="fas fa-plus me-2"></i>Создать урок
+                    </a>
+                    <a href="{% url 'control:add_homework' %}" class="btn btn-outline-success">
+                        <i class="fas fa-book me-2"></i>Добавить домашнее задание
+                    </a>
+                    <a href="{% url 'reports:attendance_report' %}" class="btn btn-outline-info">
+                        <i class="fas fa-chart-bar me-2"></i>Сформировать отчет
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

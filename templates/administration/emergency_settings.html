@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+
+{% block title %}Режим чрезвычайной ситуации{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Режим чрезвычайной ситуации</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header {% if school and school.emergency_mode %}bg-danger text-white{% else %}bg-success text-white{% endif %}">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Текущий статус
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if school %}
+                    <div class="text-center py-4">
+                        {% if school.emergency_mode %}
+                            <i class="fas fa-exclamation-circle fa-5x text-danger mb-3"></i>
+                            <h3 class="text-danger">Режим ЧС АКТИВЕН</h3>
+                            <p class="text-muted">
+                                Активирован: {{ school.emergency_start_date|date:"d.m.Y H:i" }}
+                            </p>
+                            <div class="alert alert-warning mt-3">
+                                <i class="fas fa-bell me-2"></i>
+                                Все уроки автоматически переведены в дистанционный формат
+                            </div>
+                        {% else %}
+                            <i class="fas fa-check-circle fa-5x text-success mb-3"></i>
+                            <h3 class="text-success">Режим ЧС не активен</h3>
+                            <p class="text-muted">
+                                {% if school.emergency_end_date %}
+                                    Последнее отключение: {{ school.emergency_end_date|date:"d.m.Y H:i" }}
+                                {% endif %}
+                            </p>
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Школа работает в штатном режиме
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <form method="post" action="{% url 'administration:activate_emergency' %}">
+                        {% csrf_token %}
+                        {% if school.emergency_mode %}
+                            <button type="submit" class="btn btn-success w-100 btn-lg">
+                                <i class="fas fa-check me-2"></i>Деактивировать режим ЧС
+                            </button>
+                        {% else %}
+                            <button type="submit" class="btn btn-danger w-100 btn-lg" onclick="return confirm('Вы уверены, что хотите активировать режим ЧС? Это переведет все уроки в дистанционный формат.')">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Активировать режим ЧС
+                            </button>
+                        {% endif %}
+                    </form>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Сначала создайте школу в настройках
+                    </div>
+                    <a href="{% url 'administration:school_settings' %}" class="btn btn-primary">
+                        <i class="fas fa-school me-2"></i>Перейти к настройкам школы
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Информация о режиме ЧС
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>Что происходит при активации режима ЧС:</h6>
+                <ul class="list-group list-group-flush mb-4">
+                    <li class="list-group-item">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Все уроки автоматически переводятся в онлайн-формат
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Ученики получают уведомления о дистанционном обучении
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Посещаемость отмечается автоматически при подключении к уроку
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Упрощается процесс создания онлайн-уроков
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Отчеты формируются в приоритетном порядке
+                    </li>
+                </ul>
+                
+                <h6>Статистика школы:</h6>
+                <table class="table table-sm">
+                    <tr>
+                        <th>Всего учеников:</th>
+                        <td>{{ total_students|default:"0" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Всего учителей:</th>
+                        <td>{{ total_teachers|default:"0" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Всего классов:</th>
+                        <td>{{ total_classes|default:"0" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Активных уроков сегодня:</th>
+                        <td>{{ today_lessons|default:"0" }}</td>
+                    </tr>
+                </table>
+                
+                <hr>
+                
+                <h6>Рекомендации:</h6>
+                <ul>
+                    <li>Проверьте расписание уроков перед активацией</li>
+                    <li>Убедитесь, что все ученики имеют доступ к интернету</li>
+                    <li>Подготовьте материалы для дистанционного обучения</li>
+                    <li>Проинформируйте родителей о переходе на дистанционное обучение</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    История переключений
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if school.emergency_start_date or school.emergency_end_date %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Дата и время</th>
+                                <th>Событие</th>
+                                <th>Длительность</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if school.emergency_start_date %}
+                            <tr class="table-danger">
+                                <td>{{ school.emergency_start_date|date:"d.m.Y H:i:s" }}</td>
+                                <td>
+                                    <span class="badge bg-danger">Активация режима ЧС</span>
+                                </td>
+                                <td>
+                                    {% if school.emergency_end_date %}
+                                        {{ school.emergency_start_date|timesince:school.emergency_end_date }}
+                                    {% else %}
+                                        Продолжается
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if school.emergency_end_date %}
+                            <tr class="table-success">
+                                <td>{{ school.emergency_end_date|date:"d.m.Y H:i:s" }}</td>
+                                <td>
+                                    <span class="badge bg-success">Деактивация режима ЧС</span>
+                                </td>
+                                <td>—</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">История переключений пуста</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Блок с быстрыми действиями в режиме ЧС -->
+<!-- Блок с быстрыми действиями в режиме ЧС -->
+{% if school and school.emergency_mode %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    Быстрые действия в режиме ЧС
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'classes:class_list' %}" class="btn btn-outline-danger w-100">
+                            <i class="fas fa-video me-2"></i>Перейти к урокам
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'control:attendance_list' %}" class="btn btn-outline-danger w-100">
+                            <i class="fas fa-check-circle me-2"></i>Контроль посещаемости
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'reports:attendance_report' %}" class="btn btn-outline-danger w-100">
+                            <i class="fas fa-chart-bar me-2"></i>Срочный отчет
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'administration:school_settings' %}" class="btn btn-outline-danger w-100">
+                            <i class="fas fa-cog me-2"></i>Настройки
+                        </a>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'control:add_homework' %}" class="btn btn-outline-danger w-100">
+                            <i class="fas fa-book me-2"></i>Домашнее задание
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'users:profile' %}" class="btn btn-outline-danger w-100">
+                            <i class="fas fa-user me-2"></i>Мой профиль
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+// Автоматическое обновление страницы каждые 30 секунд в режиме ЧС
+{% if school and school.emergency_mode %}
+setTimeout(function() {
+    location.reload();
+}, 30000);
+{% endif %}
+
+// Подтверждение деактивации режима ЧС
+document.querySelector('form[action*="activate"]')?.addEventListener('submit', function(e) {
+    var isActive = {{ school.emergency_mode|yesno:"true,false" }};
+    if (isActive) {
+        if (!confirm('Вы уверены, что хотите деактивировать режим ЧС? Все уроки вернутся в штатный режим.')) {
+            e.preventDefault();
+        }
+    }
+});
+</script>
+{% endblock %}

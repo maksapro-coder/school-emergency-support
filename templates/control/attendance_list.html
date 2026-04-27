@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Посещаемость{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Посещаемость</h1>
+            {% if user.is_teacher or user.is_admin %}
+            <a href="{% url 'classes:class_list' %}" class="btn btn-primary">
+                <i class="fas fa-check-circle me-2"></i>Отметить посещаемость
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                {% if attendances %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Урок</th>
+                                <th>Предмет</th>
+                                <th>Ученик</th>
+                                <th>Статус</th>
+                                <th>Отметил</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attendance in attendances %}
+                            <tr>
+                                <td>{{ attendance.lesson.date|date:"d.m.Y"|default:"—" }}</td>
+                                <td>{{ attendance.lesson.topic|truncatechars:30|default:"—" }}</td>
+                                <td>{{ attendance.lesson.subject.name|default:"—" }}</td>
+                                <td>{{ attendance.student.get_full_name|default:"—" }}</td>
+                                <td>
+                                    {% if attendance.status == 'present' %}
+                                        <span class="badge bg-success">Присутствовал</span>
+                                    {% elif attendance.status == 'absent' %}
+                                        <span class="badge bg-danger">Отсутствовал</span>
+                                    {% elif attendance.status == 'late' %}
+                                        <span class="badge bg-warning text-dark">Опоздал</span>
+                                    {% elif attendance.status == 'excused' %}
+                                        <span class="badge bg-info">Уважительная причина</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ attendance.get_status_display|default:"—" }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ attendance.marked_by.get_full_name|default:"—" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if attendances.paginator %}
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if attendances.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ attendances.previous_page_number }}">Предыдущая</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in attendances.paginator.page_range %}
+                        <li class="page-item {% if num == attendances.number %}active{% endif %}">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endfor %}
+                        
+                        {% if attendances.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ attendances.next_page_number }}">Следующая</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-check fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">Нет записей о посещаемости</h5>
+                    {% if user.is_teacher or user.is_admin %}
+                    <p class="text-muted">Отметьте посещаемость на одном из уроков</p>
+                    <a href="{% url 'classes:class_list' %}" class="btn btn-primary mt-3">
+                        <i class="fas fa-check-circle me-2"></i>Перейти к урокам
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

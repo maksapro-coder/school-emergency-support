@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Ученики класса {{ class_group.grade }}{{ class_group.letter }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'administration:admin_class_list' %}">Управление классами</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'administration:edit_class' class_group.id %}">{{ class_group.grade }}{{ class_group.letter }}</a></li>
+                <li class="breadcrumb-item active">Ученики</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users me-2"></i>
+                    Список учеников ({{ class_group.students.count }})
+                </h5>
+                <span class="badge bg-primary">{{ class_group.grade }}{{ class_group.letter }}</span>
+            </div>
+            <div class="card-body">
+                {% if class_group.students.exists %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>ФИО</th>
+                                <th>Имя пользователя</th>
+                                <th>Email</th>
+                                <th>Телефон</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student_class in class_group.students.all %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ student_class.student.get_full_name }}</td>
+                                <td>{{ student_class.student.username }}</td>
+                                <td>{{ student_class.student.email|default:"—" }}</td>
+                                <td>{{ student_class.student.phone|default:"—" }}</td>
+                                <td>
+                                    <form method="post" style="display: inline;" onsubmit="return confirm('Удалить ученика {{ student_class.student.get_full_name }} из класса?')">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="student_id" value="{{ student_class.student.id }}">
+                                        <input type="hidden" name="action" value="remove">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Удалить из класса">
+                                            <i class="fas fa-user-minus"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-user-slash fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">В классе нет учеников</h5>
+                    <p class="text-muted">Добавьте учеников из списка справа</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-plus me-2"></i>
+                    Добавить ученика
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="student_id" class="form-label">Выберите ученика</label>
+                        <select name="student_id" id="student_id" class="form-control" required>
+                            <option value="">-- Выберите ученика --</option>
+                            {% for student in students %}
+                                {% if student.id not in current_students_ids %}
+                                <option value="{{ student.id }}">
+                                    {{ student.get_full_name }} ({{ student.username }})
+                                </option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Показываются только ученики, не прикрепленные к классу</small>
+                    </div>
+                    
+                    {% if students|length == current_students_ids|length %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Все ученики уже добавлены в этот класс
+                    </div>
+                    {% endif %}
+                    
+                    <input type="hidden" name="action" value="add">
+                    <button type="submit" class="btn btn-success w-100" {% if students|length == current_students_ids|length %}disabled{% endif %}>
+                        <i class="fas fa-plus me-2"></i>Добавить в класс
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Информация
+                </h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Класс:</strong> {{ class_group.grade }}{{ class_group.letter }}</p>
+                <p><strong>Учебный год:</strong> {{ class_group.academic_year }}</p>
+                <p><strong>Всего учеников:</strong> {{ class_group.students.count }}</p>
+                <p><strong>Свободных мест:</strong> 30</p>
+                
+                <hr>
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'administration:create_user' %}?role=student&next={{ request.path }}" class="btn btn-outline-primary">
+                        <i class="fas fa-user-plus me-2"></i>Создать нового ученика
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

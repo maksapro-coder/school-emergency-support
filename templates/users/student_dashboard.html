@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}Панель ученика{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Панель ученика</h1>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Расписание -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-calendar text-primary me-2"></i>
+                    Расписание
+                </h5>
+                <p class="card-text">Просмотр расписания уроков</p>
+                {% if request.user.student_classes.first %}
+                    <a href="{% url 'classes:class_schedule' request.user.student_classes.first.class_group.id %}" class="btn btn-primary">
+                        <i class="fas fa-calendar-alt me-2"></i>Перейти
+                    </a>
+                {% else %}
+                    <button class="btn btn-secondary" disabled title="Вы не прикреплены к классу">
+                        <i class="fas fa-ban me-2"></i>Нет класса
+                    </button>
+                    <p class="text-muted small mt-2">Обратитесь к администратору</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Онлайн-уроки -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-video text-success me-2"></i>
+                    Онлайн-уроки
+                </h5>
+                <p class="card-text">Подключение к текущим урокам</p>
+                {% if request.user.student_classes.first %}
+                    <a href="{% url 'classes:class_schedule' request.user.student_classes.first.class_group.id %}" class="btn btn-success">
+                        <i class="fas fa-video me-2"></i>Подключиться
+                    </a>
+                {% else %}
+                    <button class="btn btn-secondary" disabled>
+                        <i class="fas fa-ban me-2"></i>Нет доступа
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Мои оценки -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-star text-warning me-2"></i>
+                    Мои оценки
+                </h5>
+                <p class="card-text">Просмотр текущих оценок</p>
+                <a href="{% url 'control:grade_list' %}" class="btn btn-warning">
+                    <i class="fas fa-star me-2"></i>Посмотреть
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Домашние задания -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-book text-info me-2"></i>
+                    Домашние задания
+                </h5>
+                <p class="card-text">Просмотр и сдача домашних заданий</p>
+                <a href="{% url 'control:homework_list' %}" class="btn btn-info">
+                    <i class="fas fa-book me-2"></i>Перейти
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Материалы -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-file-alt text-secondary me-2"></i>
+                    Материалы
+                </h5>
+                <p class="card-text">Доступ к учебным материалам</p>
+                {% if request.user.student_classes.first %}
+                    <a href="{% url 'classes:class_schedule' request.user.student_classes.first.class_group.id %}" class="btn btn-secondary">
+                        <i class="fas fa-file-alt me-2"></i>Смотреть
+                    </a>
+                {% else %}
+                    <button class="btn btn-secondary" disabled>
+                        <i class="fas fa-ban me-2"></i>Нет доступа
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Информация о классе (если есть) -->
+{% if request.user.student_classes.first %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-door-open me-2"></i>
+                    Мой класс
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Класс:</strong> {{ request.user.student_classes.first.class_group.grade }}{{ request.user.student_classes.first.class_group.letter }}</p>
+                        <p><strong>Учебный год:</strong> {{ request.user.student_classes.first.academic_year }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Классный руководитель:</strong> 
+                            {% with class_teacher=request.user.student_classes.first.class_group.class_teachers.first %}
+                                {% if class_teacher %}
+                                    {{ class_teacher.teacher.get_full_name }}
+                                {% else %}
+                                    <span class="text-muted">Не назначен</span>
+                                {% endif %}
+                            {% endwith %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

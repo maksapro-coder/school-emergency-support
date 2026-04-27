@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Добавление домашнего задания{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'control:homework_list' %}">Домашние задания</a></li>
+                <li class="breadcrumb-item active">Добавление задания</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Новое домашнее задание
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="lesson" class="form-label">Урок *</label>
+                        <select name="lesson" id="lesson" class="form-control" required>
+                            <option value="">Выберите урок</option>
+                            {% for lesson in lessons %}
+                            <option value="{{ lesson.id }}">
+                                {{ lesson.date|date:"d.m.Y" }} - {{ lesson.subject.name }} - {{ lesson.topic|truncatechars:30 }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Название *</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Описание *</label>
+                        <textarea class="form-control" id="description" name="description" rows="5" required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="due_date" class="form-label">Срок сдачи *</label>
+                        <input type="datetime-local" class="form-control" id="due_date" name="due_date" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="attachments" class="form-label">Вложения</label>
+                        <input type="file" class="form-control" id="attachments" name="attachments">
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'control:homework_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Назад
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Создать задание
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

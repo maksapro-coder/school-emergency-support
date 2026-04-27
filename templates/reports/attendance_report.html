@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block title %}Отчет по посещаемости{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        color: white;
+    }
+    .stat-card h3 {
+        margin: 0;
+        font-size: 2rem;
+    }
+    .stat-card p {
+        margin: 0;
+        opacity: 0.9;
+    }
+    .filter-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Отчет по посещаемости</h1>
+            <div class="btn-group">
+                <a href="{% url 'reports:export_attendance_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success">
+                    <i class="fas fa-file-excel me-2"></i>Excel
+                </a>
+                <a href="{% url 'reports:export_attendance_pdf' %}?{{ request.GET.urlencode }}" class="btn btn-danger">
+                    <i class="fas fa-file-pdf me-2"></i>PDF
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Фильтры -->
+<div class="row">
+    <div class="col-12">
+        <div class="filter-card">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="class_id" class="form-label">Класс</label>
+                    <select name="class_id" id="class_id" class="form-control">
+                        <option value="">Все классы</option>
+                        {% for class in classes %}
+                        <option value="{{ class.id }}" {% if selected_class == class.id|stringformat:"s" %}selected{% endif %}>
+                            {{ class.grade }}{{ class.letter }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="student_id" class="form-label">Ученик</label>
+                    <select name="student_id" id="student_id" class="form-control">
+                        <option value="">Все ученики</option>
+                        {% for student in students %}
+                        <option value="{{ student.id }}" {% if selected_student == student.id|stringformat:"s" %}selected{% endif %}>
+                            {{ student.get_full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label for="start_date" class="form-label">С даты</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date }}">
+                </div>
+                
+                <div class="col-md-2">
+                    <label for="end_date" class="form-label">По дату</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date }}">
+                </div>
+                
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Применить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row">
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <p>Всего записей</p>
+            <h3>{{ total_attendances }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+            <p>Присутствовали</p>
+            <h3>{{ present_count }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #dc3545 0%, #f86c6c 100%);">
+            <p>Отсутствовали</p>
+            <h3>{{ absent_count }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
+            <p>Опоздания</p>
+            <h3>{{ late_count }}</h3>
+        </div>
+    </div>
+</div>
+
+<!-- Детальная таблица -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Детальная информация</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Время</th>
+                                <th>Класс</th>
+                                <th>Предмет</th>
+                                <th>Ученик</th>
+                                <th>Статус</th>
+                                <th>Отметил</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attendance in attendances %}
+                            <tr>
+                                <td>{{ attendance.lesson.date|date:"d.m.Y" }}</td>
+                                <td>{{ attendance.lesson.start_time|time:"H:i" }} - {{ attendance.lesson.end_time|time:"H:i" }}</td>
+                                <td>{{ attendance.lesson.class_group }}</td>
+                                <td>{{ attendance.lesson.subject.name }}</td>
+                                <td>{{ attendance.student.get_full_name }}</td>
+                                <td>
+                                    {% if attendance.status == 'present' %}
+                                        <span class="badge bg-success">Присутствовал</span>
+                                    {% elif attendance.status == 'absent' %}
+                                        <span class="badge bg-danger">Отсутствовал</span>
+                                    {% elif attendance.status == 'late' %}
+                                        <span class="badge bg-warning text-dark">Опоздал</span>
+                                    {% elif attendance.status == 'excused' %}
+                                        <span class="badge bg-info">Уважительная причина</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ attendance.marked_by.get_full_name|default:"—" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4">
+                                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">Нет данных за выбранный период</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

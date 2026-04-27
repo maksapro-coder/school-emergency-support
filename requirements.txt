@@ -1,0 +1,43 @@
+# Core
+Django==4.2.7
+djangorestframework==3.14.0
+python-dotenv==1.0.0
+django-environ==0.11.2
+
+# Database
+psycopg2-binary==2.9.9
+
+# WebSocket
+channels==4.0.0
+channels-redis==4.1.0
+
+# Auth
+django-allauth==0.58.2
+
+# Forms
+django-crispy-forms==2.1
+crispy-bootstrap5==0.7
+
+# Editor
+django-ckeditor==6.7.0
+
+# Filters
+django-filter==23.5
+
+# CORS
+django-cors-headers==4.3.1
+
+# Reports
+openpyxl==3.1.2
+reportlab==4.0.9
+
+# Server
+daphne==4.1.2
+gunicorn==21.2.0
+uvicorn==0.27.1
+
+# Celery (для фоновых задач)
+celery==5.3.4
+redis==5.0.1
+django-celery-beat==2.5.0
+django-celery-results==2.5.1

@@ -1,0 +1,754 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Урок: {{ lesson.topic }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    #video-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 10px;
+        height: calc(100vh - 200px);
+    }
+    
+    .video-container {
+        position: relative;
+        background: #1a1a1a;
+        border-radius: 8px;
+        overflow: hidden;
+        aspect-ratio: 16/9;
+    }
+    
+    .video-container video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .video-label {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        color: white;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    .video-controls {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        display: flex;
+        gap: 5px;
+    }
+    
+    .control-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .control-btn.recording {
+        background: #dc3545;
+        animation: pulse-red 1s infinite;
+    }
+    
+    @keyframes pulse-red {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    
+    .chat-container {
+        height: calc(100vh - 200px);
+        display: flex;
+        flex-direction: column;
+        background: #f8f9fa;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .chat-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 12px 15px;
+    }
+    
+    .chat-messages {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 15px;
+        background: #f8f9fa;
+    }
+    
+    .message {
+        margin-bottom: 10px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        max-width: 80%;
+        word-wrap: break-word;
+    }
+    
+    .message.own {
+        background: #007bff;
+        color: white;
+        margin-left: auto;
+    }
+    
+    .message.other {
+        background: #e9ecef;
+    }
+    
+    .message.system {
+        background: #e2e3e5;
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-align: center;
+        max-width: 100%;
+        margin: 10px 0;
+    }
+    
+    .typing-indicator {
+        padding: 5px 15px;
+        font-size: 12px;
+        color: #6c757d;
+        font-style: italic;
+        display: none;
+    }
+    
+    .raised-hand {
+        animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .screen-share-indicator {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #28a745;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        z-index: 10;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2>{{ lesson.subject.name }} - {{ lesson.topic }}</h2>
+                <p class="text-muted">
+                    <i class="fas fa-user me-2"></i>{{ lesson.teacher.get_full_name }}
+                    <i class="fas fa-clock ms-3 me-2"></i>{{ lesson.start_time|time:"H:i" }} - {{ lesson.end_time|time:"H:i" }}
+                </p>
+            </div>
+            <div class="btn-group">
+                {% if user.is_teacher %}
+                <button id="record-btn" class="btn btn-danger">
+                    <i class="fas fa-circle me-2"></i>Начать запись
+                </button>
+                <button id="screen-share-btn" class="btn btn-success">
+                    <i class="fas fa-desktop me-2"></i>Показать экран
+                </button>
+                {% endif %}
+                <button id="raise-hand-btn" class="btn btn-warning">
+                    <i class="fas fa-hand me-2"></i>Поднять руку
+                </button>
+                <button id="leave-lesson-btn" class="btn btn-secondary">
+                    <i class="fas fa-sign-out-alt me-2"></i>Покинуть урок
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div id="video-grid"></div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="chat-container">
+            <div class="chat-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-comment me-2"></i>Чат урока
+                    <span class="badge bg-light text-primary ms-2" id="online-count">1</span>
+                </h6>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="message system">
+                    <i class="fas fa-info-circle me-1"></i> Вы подключились к чату
+                </div>
+            </div>
+            <div class="typing-indicator" id="typing-indicator"></div>
+            <div class="chat-input p-3 bg-white border-top">
+                <div class="input-group">
+                    <input type="text" id="chat-input" class="form-control" placeholder="Введите сообщение...">
+                    <button class="btn btn-primary" id="send-message">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <small class="text-muted mt-1 d-block">Enter для отправки</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Django данные
+    const lessonRoomName = "{{ lesson.room_name|escapejs }}";
+    const participantFullName = "{{ user.get_full_name|escapejs }}";
+    const participantId = {{ user.id }};
+    const isTeacher = {{ user.is_teacher|yesno:"true,false" }};
+    
+    // Состояние
+    let onlineUsers = new Map();
+    let typingTimeout = null;
+    let isTyping = false;
+    let localMediaStream = null;
+    let screenStream = null;
+    let isLocalVideoReady = false;
+    let isRecording = false;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let screenShareActive = false;
+    let pendingOffers = [];
+    
+    const peerConnections = {};
+    const config = {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+    };
+    
+    const ws = new WebSocket('ws://' + window.location.host + '/ws/lesson/' + lessonRoomName + '/');
+    
+    // Чат функции
+    function addMessage(msg, username, isOwn) {
+        const container = document.getElementById('chat-messages');
+        const div = document.createElement('div');
+        div.className = 'message ' + (isOwn ? 'own' : 'other');
+        const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        div.innerHTML = '<div class="sender">' + (isOwn ? 'Вы' : username) + ' <span class="time">' + time + '</span></div><div>' + escapeHtml(msg) + '</div>';
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    function addSystemMessage(text) {
+        const container = document.getElementById('chat-messages');
+        const div = document.createElement('div');
+        div.className = 'message system';
+        div.innerHTML = '<i class="fas fa-info-circle me-1"></i>' + text;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    function updateCount() {
+        document.getElementById('online-count').textContent = onlineUsers.size;
+    }
+    
+    function showTyping(username) {
+        const ind = document.getElementById('typing-indicator');
+        ind.innerHTML = '<i class="fas fa-pencil-alt me-1"></i>' + username + ' печатает...';
+        ind.style.display = 'block';
+        setTimeout(() => ind.style.display = 'none', 3000);
+    }
+    
+    // Запись урока
+    function startRecording() {
+        if (!localMediaStream) return;
+        
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(localMediaStream);
+        
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        };
+        
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `lesson_${lessonRoomName}_${new Date().toISOString()}.webm`;
+            a.click();
+            URL.revokeObjectURL(url);
+            addSystemMessage('📹 Запись урока сохранена');
+            
+            // Отправляем уведомление в чат
+            ws.send(JSON.stringify({
+                type: 'chat-message',
+                message: '📹 Запись урока сохранена'
+            }));
+        };
+        
+        mediaRecorder.start();
+        isRecording = true;
+        document.getElementById('record-btn').innerHTML = '<i class="fas fa-stop me-2"></i>Остановить запись';
+        document.getElementById('record-btn').classList.add('recording');
+        addSystemMessage('🔴 Начата запись урока');
+    }
+    
+    function stopRecording() {
+        if (mediaRecorder && isRecording) {
+            mediaRecorder.stop();
+            isRecording = false;
+            document.getElementById('record-btn').innerHTML = '<i class="fas fa-circle me-2"></i>Начать запись';
+            document.getElementById('record-btn').classList.remove('recording');
+            addSystemMessage('⏹️ Запись урока остановлена');
+        }
+    }
+    
+    // Демонстрация экрана
+    async function startScreenShare() {
+        try {
+            screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            
+            // Заменяем видео трек во всех peer соединениях
+            const videoTrack = screenStream.getVideoTracks()[0];
+            
+            Object.values(peerConnections).forEach(pc => {
+                const senders = pc.getSenders();
+                const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+                if (videoSender) {
+                    videoSender.replaceTrack(videoTrack);
+                }
+            });
+            
+            // Заменяем локальное видео
+            if (localMediaStream) {
+                const oldVideoTrack = localMediaStream.getVideoTracks()[0];
+                localMediaStream.removeTrack(oldVideoTrack);
+                localMediaStream.addTrack(videoTrack);
+                
+                // Обновляем локальное видео
+                const localVideo = document.querySelector('#container-' + participantId + ' video');
+                if (localVideo) {
+                    localVideo.srcObject = localMediaStream;
+                }
+            }
+            
+            screenShareActive = true;
+            document.getElementById('screen-share-btn').innerHTML = '<i class="fas fa-stop me-2"></i>Остановить показ';
+            document.getElementById('screen-share-btn').classList.add('btn-danger');
+            document.getElementById('screen-share-btn').classList.remove('btn-success');
+            
+            // Добавляем индикатор
+            const container = document.getElementById('container-' + participantId);
+            if (container && !document.querySelector('.screen-share-indicator')) {
+                const indicator = document.createElement('div');
+                indicator.className = 'screen-share-indicator';
+                indicator.innerHTML = '<i class="fas fa-desktop me-1"></i>Демонстрация экрана';
+                container.appendChild(indicator);
+            }
+            
+            addSystemMessage('🖥️ Вы начали демонстрацию экрана');
+            
+            screenStream.getVideoTracks()[0].onended = () => {
+                stopScreenShare();
+            };
+            
+        } catch (err) {
+            console.error('Ошибка демонстрации экрана:', err);
+            addSystemMessage('⚠️ Не удалось начать демонстрацию экрана');
+        }
+    }
+    
+    async function stopScreenShare() {
+        if (screenStream) {
+            screenStream.getTracks().forEach(track => track.stop());
+            
+            // Восстанавливаем видео трек из камеры
+            const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            const videoTrack = cameraStream.getVideoTracks()[0];
+            
+            Object.values(peerConnections).forEach(pc => {
+                const senders = pc.getSenders();
+                const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+                if (videoSender) {
+                    videoSender.replaceTrack(videoTrack);
+                }
+            });
+            
+            // Восстанавливаем локальное видео
+            if (localMediaStream) {
+                const oldVideoTrack = localMediaStream.getVideoTracks()[0];
+                localMediaStream.removeTrack(oldVideoTrack);
+                localMediaStream.addTrack(videoTrack);
+                
+                const localVideo = document.querySelector('#container-' + participantId + ' video');
+                if (localVideo) {
+                    localVideo.srcObject = localMediaStream;
+                }
+            }
+            
+            screenShareActive = false;
+            document.getElementById('screen-share-btn').innerHTML = '<i class="fas fa-desktop me-2"></i>Показать экран';
+            document.getElementById('screen-share-btn').classList.remove('btn-danger');
+            document.getElementById('screen-share-btn').classList.add('btn-success');
+            
+            // Удаляем индикатор
+            const indicator = document.querySelector('.screen-share-indicator');
+            if (indicator) indicator.remove();
+            
+            addSystemMessage('🖥️ Демонстрация экрана завершена');
+        }
+    }
+    
+    // Видео функции
+    function addVideoToGrid(userId, stream, name, isLocal = false) {
+        const containerId = 'container-' + userId;
+        if (document.getElementById(containerId)) return;
+        
+        console.log('📹 Добавление видео для', name);
+        
+        const container = document.createElement('div');
+        container.className = 'video-container';
+        container.id = containerId;
+        
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.autoplay = true;
+        video.playsInline = true;
+        if (isLocal) video.muted = true;
+        
+        const label = document.createElement('div');
+        label.className = 'video-label';
+        label.textContent = name + (isLocal ? ' (Вы)' : '');
+        
+        container.appendChild(video);
+        container.appendChild(label);
+        
+        if (isLocal) {
+            const controls = document.createElement('div');
+            controls.className = 'video-controls';
+            controls.innerHTML = '<button class="control-btn" id="toggle-video"><i class="fas fa-video"></i></button><button class="control-btn" id="toggle-audio"><i class="fas fa-microphone"></i></button>';
+            container.appendChild(controls);
+            
+            setTimeout(() => {
+                document.getElementById('toggle-video')?.addEventListener('click', () => {
+                    const track = localMediaStream?.getVideoTracks()[0];
+                    if (track) {
+                        track.enabled = !track.enabled;
+                        document.getElementById('toggle-video').innerHTML = track.enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+                    }
+                });
+                document.getElementById('toggle-audio')?.addEventListener('click', () => {
+                    const track = localMediaStream?.getAudioTracks()[0];
+                    if (track) {
+                        track.enabled = !track.enabled;
+                        document.getElementById('toggle-audio').innerHTML = track.enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+                    }
+                });
+            }, 100);
+        }
+        
+        document.getElementById('video-grid').appendChild(container);
+    }
+    
+    // Отправка offer
+    async function sendOffer(remoteId, remoteName) {
+        if (!isLocalVideoReady || !localMediaStream) {
+            console.log(`⏳ Локальное видео не готово, offer для ${remoteName} в очередь`);
+            pendingOffers.push({ remoteId, remoteName });
+            return;
+        }
+        
+        console.log(`📤 Отправка offer для ${remoteName}`);
+        
+        let pc = peerConnections[remoteId];
+        if (!pc) {
+            pc = new RTCPeerConnection(config);
+            setupPeerConnection(pc, remoteId, remoteName);
+            peerConnections[remoteId] = pc;
+        }
+        
+        // Добавляем треки
+        localMediaStream.getTracks().forEach(track => {
+            try {
+                pc.addTrack(track, localMediaStream);
+                console.log(`📹 Добавлен трек ${track.kind} для ${remoteName}`);
+            } catch(e) { console.log('Трек уже добавлен'); }
+        });
+        
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        ws.send(JSON.stringify({ type: 'offer', offer: offer, target_user_id: remoteId }));
+    }
+    
+    function setupPeerConnection(pc, remoteId, remoteName) {
+        pc.onicecandidate = (e) => {
+            if (e.candidate) {
+                ws.send(JSON.stringify({ type: 'ice-candidate', candidate: e.candidate, target_user_id: remoteId }));
+            }
+        };
+        
+        pc.ontrack = (e) => {
+            if (e.streams && e.streams[0]) {
+                console.log('📥 ONTRACK для', remoteName);
+                addVideoToGrid(remoteId, e.streams[0], remoteName, false);
+            }
+        };
+        
+        pc.oniceconnectionstatechange = () => {
+            if (pc.iceConnectionState === 'connected') {
+                console.log('🎉 Соединение с', remoteName, 'установлено');
+            }
+        };
+    }
+    
+    async function initLocalVideo() {
+        try {
+            localMediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            console.log('✅ Локальный поток получен');
+            isLocalVideoReady = true;
+            addVideoToGrid(participantId, localMediaStream, participantFullName, true);
+            document.getElementById('send-message').disabled = false;
+            
+            // Отправляем все накопленные offer
+            for (const offer of pendingOffers) {
+                await sendOffer(offer.remoteId, offer.remoteName);
+            }
+            pendingOffers = [];
+        } catch (err) {
+            console.error('❌ Ошибка камеры:', err);
+            addSystemMessage('⚠️ Нет доступа к камере/микрофону');
+        }
+    }
+    
+    // Принудительная проверка отсутствующих видео
+    setInterval(() => {
+        Object.keys(peerConnections).forEach(id => {
+            const uid = parseInt(id);
+            if (uid !== participantId && !document.getElementById('container-' + uid)) {
+                const pc = peerConnections[uid];
+                const receivers = pc.getReceivers();
+                receivers.forEach(r => {
+                    if (r.track && r.track.kind === 'video') {
+                        addVideoToGrid(uid, new MediaStream([r.track]), onlineUsers.get(uid) || 'Участник', false);
+                    }
+                });
+            }
+        });
+    }, 3000);
+    
+    // WebSocket обработка
+    ws.onopen = () => {
+        console.log('✅ WebSocket подключен');
+        onlineUsers.set(participantId, participantFullName);
+        updateCount();
+        addSystemMessage('✅ Вы подключились к уроку');
+    };
+    
+    ws.onclose = () => addSystemMessage('❌ Соединение потеряно');
+    
+    ws.onmessage = async (e) => {
+        const data = JSON.parse(e.data);
+        
+        switch(data.type) {
+            case 'user_list':
+                if (data.users) {
+                    for (const u of data.users) {
+                        if (u.id !== participantId && !peerConnections[u.id]) {
+                            onlineUsers.set(u.id, u.name);
+                            await sendOffer(u.id, u.name);
+                        }
+                    }
+                    updateCount();
+                }
+                break;
+                
+            case 'user_joined':
+                if (data.user_id !== participantId && !peerConnections[data.user_id]) {
+                    onlineUsers.set(data.user_id, data.username);
+                    updateCount();
+                    addSystemMessage('👋 ' + data.username + ' присоединился');
+                    await sendOffer(data.user_id, data.username);
+                }
+                break;
+                
+            case 'user_left':
+                onlineUsers.delete(data.user_id);
+                updateCount();
+                addSystemMessage('👋 ' + data.username + ' покинул');
+                if (peerConnections[data.user_id]) {
+                    peerConnections[data.user_id].close();
+                    delete peerConnections[data.user_id];
+                    const el = document.getElementById('container-' + data.user_id);
+                    if (el) el.remove();
+                }
+                break;
+                
+            case 'offer':
+                let pc = peerConnections[data.user_id];
+                if (!pc) {
+                    pc = new RTCPeerConnection(config);
+                    setupPeerConnection(pc, data.user_id, data.username);
+                    peerConnections[data.user_id] = pc;
+                }
+                
+                if (localMediaStream && isLocalVideoReady) {
+                    localMediaStream.getTracks().forEach(track => {
+                        try { pc.addTrack(track, localMediaStream); } catch(e) {}
+                    });
+                }
+                
+                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                ws.send(JSON.stringify({ type: 'answer', answer: answer, target_user_id: data.user_id }));
+                break;
+                
+            case 'answer':
+                const pcAns = peerConnections[data.user_id];
+                if (pcAns && pcAns.signalingState === 'have-local-offer') {
+                    await pcAns.setRemoteDescription(new RTCSessionDescription(data.answer));
+                }
+                break;
+                
+            case 'ice-candidate':
+                const pcIce = peerConnections[data.user_id];
+                if (pcIce && data.candidate) {
+                    await pcIce.addIceCandidate(new RTCIceCandidate(data.candidate));
+                }
+                break;
+                
+            case 'chat-message':
+                addMessage(data.message, data.username, data.user_id === participantId);
+                break;
+                
+            case 'typing':
+                if (data.user_id !== participantId && data.is_typing) showTyping(data.username);
+                break;
+                
+            case 'raise-hand':
+                addSystemMessage('✋ ' + data.username + ' поднял руку');
+                const vid = document.getElementById('container-' + data.user_id);
+                if (vid) {
+                    vid.classList.add('raised-hand');
+                    setTimeout(() => vid.classList.remove('raised-hand'), 3000);
+                }
+                break;
+                
+            case 'screen_share_started':
+                addSystemMessage('🖥️ ' + data.username + ' начал демонстрацию экрана');
+                const screenContainer = document.getElementById('container-' + data.user_id);
+                if (screenContainer) {
+                    let indicator = screenContainer.querySelector('.screen-share-indicator');
+                    if (!indicator) {
+                        indicator = document.createElement('div');
+                        indicator.className = 'screen-share-indicator';
+                        indicator.innerHTML = '<i class="fas fa-desktop me-1"></i>Демонстрация экрана';
+                        screenContainer.appendChild(indicator);
+                    }
+                }
+                break;
+                
+            case 'screen_share_stopped':
+                addSystemMessage('🖥️ ' + data.username + ' остановил демонстрацию экрана');
+                const stoppedContainer = document.getElementById('container-' + data.user_id);
+                if (stoppedContainer) {
+                    const indicator = stoppedContainer.querySelector('.screen-share-indicator');
+                    if (indicator) indicator.remove();
+                }
+                break;
+        }
+    };
+    
+    // DOM события
+    document.addEventListener('DOMContentLoaded', () => {
+        const input = document.getElementById('chat-input');
+        const btn = document.getElementById('send-message');
+        
+        btn.addEventListener('click', () => {
+            const msg = input.value.trim();
+            if (msg) {
+                ws.send(JSON.stringify({ type: 'chat-message', message: msg }));
+                input.value = '';
+            }
+        });
+        
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); btn.click(); }
+        });
+        
+        input.addEventListener('input', () => {
+            if (!isTyping && input.value.length) {
+                isTyping = true;
+                ws.send(JSON.stringify({ type: 'typing', is_typing: true }));
+            }
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                if (isTyping) {
+                    isTyping = false;
+                    ws.send(JSON.stringify({ type: 'typing', is_typing: false }));
+                }
+            }, 2000);
+        });
+        
+        document.getElementById('raise-hand-btn').addEventListener('click', () => {
+            ws.send(JSON.stringify({ type: 'raise-hand' }));
+            addSystemMessage('✋ Вы подняли руку');
+        });
+        
+        if (isTeacher) {
+            document.getElementById('record-btn').addEventListener('click', () => {
+                if (isRecording) {
+                    stopRecording();
+                } else {
+                    startRecording();
+                }
+            });
+            
+            document.getElementById('screen-share-btn').addEventListener('click', () => {
+                if (screenShareActive) {
+                    stopScreenShare();
+                } else {
+                    startScreenShare();
+                }
+            });
+        }
+        
+        document.getElementById('leave-lesson-btn').addEventListener('click', () => {
+            if (localMediaStream) localMediaStream.getTracks().forEach(t => t.stop());
+            if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+            ws.close();
+            window.location.href = "{% url 'classes:class_schedule' lesson.class_group.id %}";
+        });
+    });
+    
+    // Запуск
+    initLocalVideo();
+</script>
+{% endblock %}
