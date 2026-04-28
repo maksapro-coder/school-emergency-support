@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'control',
     'reports',
     'administration',
+     'news',
 ]
 
 MIDDLEWARE = [

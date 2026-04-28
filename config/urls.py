@@ -12,6 +12,7 @@ urlpatterns = [
     path('control/', include('control.urls')),
     path('reports/', include('reports.urls')),
     path('administration/', include('administration.urls')),
+    path('news/', include('news.urls')),
 ]
 
 if settings.DEBUG:
