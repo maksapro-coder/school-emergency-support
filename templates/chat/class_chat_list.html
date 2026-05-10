@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Чаты классов{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Чаты классов</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        {% if class_chats %}
+            {% for chat_info in class_chats %}
+            <a href="{% url 'chat:class_detail' chat_info.class_group.id %}" class="text-decoration-none">
+                <div class="card mb-3 {% if chat_info.unread_count > 0 %}border-primary shadow{% endif %}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                    style="width: 60px; height: 60px;">
+                                    <i class="fas fa-users fa-2x"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">
+                                        {{ chat_info.class_group.grade }}{{ chat_info.class_group.letter }}
+                                        {% if chat_info.unread_count > 0 %}
+                                            <span class="badge bg-danger ms-2">{{ chat_info.unread_count }}</span>
+                                        {% endif %}
+                                    </h5>
+                                    <small class="text-muted">
+                                        <i class="fas fa-comment me-1"></i>
+                                        {{ chat_info.last_message_text }}
+                                        <br>
+                                        {% if chat_info.last_message %}
+                                            <i class="fas fa-clock me-1"></i>{{ chat_info.last_message.created_at|date:"d.m.Y H:i" }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-muted fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-comments fa-4x text-muted mb-3"></i>
+                <h5>Нет чатов</h5>
+                <p class="text-muted">Вы пока не привязаны ни к одному классу</p>
+                {% if user.is_admin %}
+                <a href="{% url 'administration:admin_class_list' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Создать класс
+                </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

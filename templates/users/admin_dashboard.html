@@ -3,87 +3,107 @@
 {% block title %}Панель администратора{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h1 class="mb-4">Панель администратора</h1>
+<div class="fade-in-up">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-5 fw-bold">Панель управления</h1>
+            <p class="text-muted">Добро пожаловать, {{ user.get_full_name }}!</p>
+        </div>
     </div>
-</div>
-
-<div class="row">
-    <div class="col-md-4 mb-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="fas fa-users text-primary me-2"></i>
-                    Управление пользователями
-                </h5>
-                <p class="card-text">Добавление, редактирование и удаление пользователей</p>
-                <a href="{% url 'administration:user_list' %}" class="btn btn-primary">Перейти</a>
+    
+    <!-- Статистика -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <div class="display-4 text-primary mb-2">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3 class="mb-0">{{ total_users }}</h3>
+                    <p class="text-muted mb-0">Всего пользователей</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <div class="display-4 text-success mb-2">
+                        <i class="fas fa-chalkboard-user"></i>
+                    </div>
+                    <h3 class="mb-0">{{ total_teachers }}</h3>
+                    <p class="text-muted mb-0">Учителей</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <div class="display-4 text-info mb-2">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h3 class="mb-0">{{ total_students }}</h3>
+                    <p class="text-muted mb-0">Учеников</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <div class="display-4 text-warning mb-2">
+                        <i class="fas fa-door-open"></i>
+                    </div>
+                    <h3 class="mb-0">{{ total_classes }}</h3>
+                    <p class="text-muted mb-0">Классов</p>
+                </div>
             </div>
         </div>
     </div>
     
-    <div class="col-md-4 mb-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="fas fa-door-open text-success me-2"></i>
-                    Управление классами
-                </h5>
-                <p class="card-text">Создание и редактирование классов, расписания</p>
-                <a href="{% url 'administration:admin_class_list' %}" class="btn btn-success">Перейти</a>
+    <!-- Быстрые действия -->
+    <div class="row g-4">
+        <div class="col-12">
+            <h3 class="mb-3">Быстрые действия</h3>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 text-primary mb-3">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <h5>Добавить пользователя</h5>
+                    <p class="text-muted">Создание новых учетных записей</p>
+                    <a href="{% url 'administration:create_user' %}" class="btn btn-primary">Создать</a>
+                </div>
             </div>
         </div>
-    </div>
-    
-    <div class="col-md-4 mb-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="fas fa-chart-bar text-info me-2"></i>
-                    Отчеты
-                </h5>
-                <p class="card-text">Просмотр отчетов по посещаемости и успеваемости</p>
-                <a href="{% url 'reports:attendance_report' %}" class="btn btn-info">Перейти</a>
+        
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 text-success mb-3">
+                        <i class="fas fa-door-open"></i>
+                    </div>
+                    <h5>Управление классами</h5>
+                    <p class="text-muted">Создание и редактирование классов</p>
+                    <a href="{% url 'administration:admin_class_list' %}" class="btn btn-success">Перейти</a>
+                </div>
             </div>
         </div>
-    </div>
-    
-    <div class="col-md-4 mb-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
-                    Режим ЧС
-                </h5>
-                <p class="card-text">Управление режимом чрезвычайной ситуации</p>
-                <a href="{% url 'administration:emergency_settings' %}" class="btn btn-warning">Настроить</a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-4 mb-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="fas fa-calendar text-danger me-2"></i>
-                    Расписание
-                </h5>
-                <p class="card-text">Просмотр и редактирование расписания</p>
-                <a href="{% url 'classes:class_list' %}" class="btn btn-danger">Перейти</a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-4 mb-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="fas fa-school text-secondary me-2"></i>
-                    Настройки школы
-                </h5>
-                <p class="card-text">Настройка информации о школе</p>
-                <a href="{% url 'administration:school_settings' %}" class="btn btn-secondary">Настроить</a>
+        
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 text-info mb-3">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <h5>Управление предметами</h5>
+                    <p class="text-muted">Добавление и редактирование предметов</p>
+                    <a href="{% url 'administration:subject_list' %}" class="btn btn-info">Перейти</a>
+                </div>
             </div>
         </div>
     </div>

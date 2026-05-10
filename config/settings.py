@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'reports',
     'administration',
      'news',
+     'chat',
 ]
 
 MIDDLEWARE = [
