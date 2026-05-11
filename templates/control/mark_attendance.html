@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Отметка посещаемости{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'control:attendance_list' %}">Посещаемость</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'classes:lesson_detail' lesson.id %}">{{ lesson.topic|truncatechars:30 }}</a></li>
+                <li class="breadcrumb-item active">Отметка посещаемости</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Отметка посещаемости: {{ lesson.subject.name }} - {{ lesson.topic }}
+                </h5>
+                <small class="text-muted">{{ lesson.date|date:"d.m.Y" }} {{ lesson.start_time|time:"H:i" }} - {{ lesson.end_time|time:"H:i" }}</small>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Ученик</th>
+                                    <th>Статус</th>
+                                    <th>Примечание</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ student.get_full_name }}</td>
+                                    <td>
+                                        <select name="status_{{ student.id }}" class="form-control">
+                                            <option value="present">Присутствовал</option>
+                                            <option value="absent">Отсутствовал</option>
+                                            <option value="late">Опоздал</option>
+                                            <option value="excused">Уважительная причина</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="text" name="note_{{ student.id }}" class="form-control" placeholder="Примечание">
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4">
+                                        <p class="text-muted mb-0">В классе нет учеников</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if students %}
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'classes:lesson_detail' lesson.id %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Назад
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Сохранить посещаемость
+                        </button>
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

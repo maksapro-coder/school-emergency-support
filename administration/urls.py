@@ -23,6 +23,8 @@ urlpatterns = [
     path('users/create/', views.create_user, name='create_user'),
     path('users/<int:user_id>/edit/', views.edit_user, name='edit_user'),
     path('users/<int:user_id>/delete/', views.delete_user, name='delete_user'),
+    path('classes/<int:class_id>/teachers/', views.class_teachers, name='class_teachers'),
+
     
     # Настройки ЧС
     path('emergency/', views.emergency_settings, name='emergency_settings'),

@@ -11,16 +11,24 @@ from administration.models import Class as SchoolClass, StudentClass, ClassTeach
 @login_required
 def class_chat_list(request):
     """Список чатов классов пользователя"""
-    from administration.models import StudentClass
-    from django.db.models import Q
+    from administration.models import StudentClass, ClassTeacher, ClassSubjectTeacher
     
-    # Получаем классы пользователя
     if request.user.is_teacher():
-        user_classes = SchoolClass.objects.filter(
-            Q(class_teachers__teacher=request.user) |
-            Q(lessons__teacher=request.user)
-        ).distinct()
+        # Получаем классы, где учитель является классным руководителем
+        managed_classes = ClassTeacher.objects.filter(
+            teacher=request.user
+        ).values_list('class_group_id', flat=True)
+        
+        # Получаем классы, где учитель ведет предметы
+        taught_classes = ClassSubjectTeacher.objects.filter(
+            teacher=request.user
+        ).values_list('class_group_id', flat=True)
+        
+        # Объединяем и получаем уникальные классы
+        class_ids = set(list(managed_classes) + list(taught_classes))
+        user_classes = SchoolClass.objects.filter(id__in=class_ids)
     else:
+        # Ученик видит свой класс
         student_classes = StudentClass.objects.filter(student=request.user)
         user_classes = [sc.class_group for sc in student_classes]
     
@@ -33,7 +41,6 @@ def class_chat_list(request):
         
         last_message = chat.messages.order_by('-created_at').first()
         
-        # Форматируем последнее сообщение для отображения
         last_message_text = ""
         if last_message:
             if last_message.text:
@@ -44,8 +51,6 @@ def class_chat_list(request):
                 last_message_text = f"🖼️ Изображение"
             else:
                 last_message_text = "Новое сообщение"
-            
-            # Добавляем имя отправителя
             last_message_text = f"{last_message.sender.get_short_name()}: {last_message_text}"
         else:
             last_message_text = "Нет сообщений"

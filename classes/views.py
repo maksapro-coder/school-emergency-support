@@ -12,9 +12,29 @@ from users.models import User
 @login_required
 def class_list(request):
     """Список классов (для учителей и администраторов)"""
-    if request.user.is_teacher() or request.user.is_admin():
-        classes = SchoolClass.objects.all()  # Используем SchoolClass
+    if request.user.is_teacher():
+        from administration.models import ClassTeacher, ClassSubjectTeacher
+        
+        # Получаем классы, где учитель является классным руководителем
+        managed_classes = ClassTeacher.objects.filter(
+            teacher=request.user
+        ).values_list('class_group_id', flat=True)
+        
+        # Получаем классы, где учитель ведет предметы
+        taught_classes = ClassSubjectTeacher.objects.filter(
+            teacher=request.user
+        ).values_list('class_group_id', flat=True)
+        
+        # Объединяем и получаем уникальные классы
+        class_ids = set(list(managed_classes) + list(taught_classes))
+        classes = SchoolClass.objects.filter(id__in=class_ids)
+        
         return render(request, 'classes/class_list.html', {'classes': classes})
+    
+    elif request.user.is_admin():
+        classes = SchoolClass.objects.all()
+        return render(request, 'classes/class_list.html', {'classes': classes})
+    
     else:
         # Для учеников показываем только их класс
         student_class = request.user.student_classes.first()
@@ -24,24 +44,70 @@ def class_list(request):
             return render(request, 'classes/no_class.html')
 
 @login_required
+def activate_lesson(request, lesson_id):
+    """Активация урока (только для учителя)"""
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+    
+    if not request.user.is_teacher() or lesson.teacher != request.user:
+        messages.error(request, 'У вас нет прав для активации этого урока')
+        return redirect('classes:class_schedule', class_id=lesson.class_group.id)
+    
+    lesson.is_active = True
+    lesson.save()
+    
+    messages.success(request, f'Урок "{lesson.topic}" активирован. Ученики могут подключаться.')
+    return redirect('classes:class_schedule', class_id=lesson.class_group.id)
+
+
+@login_required
+def end_lesson(request, lesson_id):
+    """Завершение урока (только для учителя)"""
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+    
+    if not request.user.is_teacher() or lesson.teacher != request.user:
+        messages.error(request, 'У вас нет прав для завершения этого урока')
+        return redirect('classes:class_schedule', class_id=lesson.class_group.id)
+    
+    lesson.is_active = False
+    lesson.save()
+    
+    messages.success(request, f'Урок "{lesson.topic}" завершен.')
+    return redirect('classes:class_schedule', class_id=lesson.class_group.id)
+
+
+@login_required
 def class_detail(request, class_id):
     """Детальная информация о классе"""
-    class_group = get_object_or_404(SchoolClass, id=class_id)  # Используем SchoolClass
-    students = class_group.students.all()
+    class_group = get_object_or_404(SchoolClass, id=class_id)
+    students = class_group.students.select_related('student').all()
+    
     return render(request, 'classes/class_detail.html', {
         'class_group': class_group,
-        'students': students
+        'students': students,  # Передаём список объектов StudentClass
     })
 
 @login_required
+@login_required
 def class_schedule(request, class_id):
     """Расписание для класса"""
-    class_group = get_object_or_404(SchoolClass, id=class_id)  # Используем SchoolClass
-    lessons = Lesson.objects.filter(class_group=class_group).order_by('date', 'start_time')
-    return render(request, 'classes/class_schedule.html', {
-        'class_group': class_group,
-        'lessons': lessons
-    })
+    try:
+        class_group = get_object_or_404(SchoolClass, id=class_id)
+        lessons = Lesson.objects.filter(class_group=class_group).order_by('date', 'start_time')
+        
+        # Добавим отладочный вывод в консоль
+        print(f"DEBUG: class_schedule - class_id: {class_id}")
+        print(f"DEBUG: Найдено уроков: {lessons.count()}")
+        for lesson in lessons:
+            print(f"DEBUG: Урок {lesson.id}: {lesson.topic}")
+        
+        return render(request, 'classes/class_schedule.html', {
+            'class_group': class_group,
+            'lessons': lessons
+        })
+    except Exception as e:
+        print(f"ERROR in class_schedule: {e}")
+        # Временный ответ для отладки
+        return HttpResponse(f"Ошибка: {e}")
 
 @login_required
 def lesson_detail(request, lesson_id):

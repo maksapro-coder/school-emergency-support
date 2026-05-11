@@ -4,6 +4,8 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.utils import timezone
 from datetime import datetime
+from .models import Attendance
+
 
 from .models import Attendance, Grade, Homework, HomeworkSubmission
 from classes.models import Lesson
@@ -69,16 +71,13 @@ def mark_attendance(request, lesson_id):
         messages.success(request, 'Посещаемость успешно отмечена')
         return redirect('classes:lesson_detail', lesson_id=lesson.id)
     
-    # Получаем уже отмеченную посещаемость для предзаполнения формы
-    existing_attendance = {
-        a.student_id: a for a in Attendance.objects.filter(lesson=lesson)
-    }
-    
-    return render(request, 'control/mark_attendance.html', {
+    # GET запрос - показываем форму
+    context = {
         'lesson': lesson,
         'students': students_list,
-        'existing_attendance': existing_attendance
-    })
+    }
+    print(f"DEBUG: Rendering mark_attendance with lesson={lesson}, students={len(students_list)}")
+    return render(request, 'control/mark_attendance.html', context)
 
 @login_required
 def grade_list(request):

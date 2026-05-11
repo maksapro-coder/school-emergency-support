@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.db import transaction
 from datetime import datetime
 
-from .models import School, Class, StudentClass, ClassTeacher, Subject
+from .models import School, Class, StudentClass, ClassTeacher, Subject, ClassSubjectTeacher
 from users.models import User
 
 @login_required
@@ -39,6 +39,90 @@ def school_settings(request):
         return redirect('administration:school_settings')
     
     return render(request, 'administration/school_settings.html', {'school': school})
+
+@login_required
+def class_teachers(request, class_id):
+    """Управление преподавателями в классе"""
+    if not request.user.is_admin():
+        messages.error(request, 'У вас нет прав для доступа к этой странице')
+        return redirect('users:dashboard')
+    
+    class_group = get_object_or_404(Class, id=class_id)
+    all_teachers = User.objects.filter(role='teacher').order_by('last_name', 'first_name')
+    subjects = Subject.objects.all().order_by('name')
+    
+    # Обработка POST запроса
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'add_class_teacher':
+            teacher_id = request.POST.get('teacher_id')
+            if teacher_id:
+                teacher = get_object_or_404(User, id=teacher_id, role='teacher')
+                ClassTeacher.objects.get_or_create(
+                    class_group=class_group,
+                    teacher=teacher,
+                    academic_year=class_group.academic_year
+                )
+                messages.success(request, f'Учитель {teacher.get_full_name()} назначен классным руководителем')
+        
+        elif action == 'remove_class_teacher':
+            teacher_id = request.POST.get('teacher_id')
+            if teacher_id:
+                ClassTeacher.objects.filter(
+                    class_group=class_group,
+                    teacher_id=teacher_id,
+                    academic_year=class_group.academic_year
+                ).delete()
+                messages.success(request, 'Классный руководитель удален')
+        
+        elif action == 'add_subject_teacher':
+            teacher_id = request.POST.get('teacher_id')
+            subject_id = request.POST.get('subject_id')
+            if teacher_id and subject_id:
+                teacher = get_object_or_404(User, id=teacher_id, role='teacher')
+                subject = get_object_or_404(Subject, id=subject_id)
+                ClassSubjectTeacher.objects.get_or_create(
+                    class_group=class_group,
+                    subject=subject,
+                    teacher=teacher,
+                    academic_year=class_group.academic_year
+                )
+                messages.success(request, f'Преподаватель {teacher.get_full_name()} назначен на предмет {subject.name}')
+        
+        elif action == 'remove_subject_teacher':
+            subject_teacher_id = request.POST.get('subject_teacher_id')
+            if subject_teacher_id:
+                ClassSubjectTeacher.objects.filter(id=subject_teacher_id).delete()
+                messages.success(request, 'Преподаватель предмета удален')
+        
+        # После обработки перенаправляем на ту же страницу
+        return redirect('administration:class_teachers', class_id=class_group.id)
+    
+    # GET запрос - показываем страницу
+    current_class_teachers = ClassTeacher.objects.filter(
+        class_group=class_group,
+        academic_year=class_group.academic_year
+    ).select_related('teacher')
+    
+    current_subject_teachers = ClassSubjectTeacher.objects.filter(
+        class_group=class_group,
+        academic_year=class_group.academic_year
+    ).select_related('teacher', 'subject')
+    
+    current_class_teacher_ids = [ct.teacher.id for ct in current_class_teachers]
+    
+    context = {
+        'class_group': class_group,
+        'all_teachers': all_teachers,
+        'subjects': subjects,
+        'current_class_teachers': current_class_teachers,
+        'current_subject_teachers': current_subject_teachers,
+        'current_class_teacher_ids': current_class_teacher_ids,
+    }
+    return render(request, 'administration/class_teachers.html', context)
+
+
 
 @login_required
 def admin_class_list(request):

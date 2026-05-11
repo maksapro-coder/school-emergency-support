@@ -10,4 +10,8 @@ urlpatterns = [
     path('<int:class_id>/create-lesson/', views.create_lesson, name='create_lesson'),
     path('lesson/<int:lesson_id>/', views.lesson_detail, name='lesson_detail'),
     path('lesson/<int:lesson_id>/join/', views.join_lesson, name='join_lesson'),
+    path('lesson/<int:lesson_id>/activate/', views.activate_lesson, name='activate_lesson'),
+    path('lesson/<int:lesson_id>/end/', views.end_lesson, name='end_lesson'),
+
+
 ]

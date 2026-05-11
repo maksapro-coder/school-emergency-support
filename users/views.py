@@ -18,17 +18,35 @@ def dashboard(request):
     school = School.objects.first()
     
     if user.is_teacher():
-        # Статистика для учителя
+        from classes.models import Lesson
+        from control.models import Grade, HomeworkSubmission, Attendance
+        from administration.models import ClassTeacher, ClassSubjectTeacher, Class as SchoolClass
+        from django.db.models import Avg
+        from django.utils import timezone
+        
+        # Получаем классы, где учитель является классным руководителем
+        managed_classes = ClassTeacher.objects.filter(
+            teacher=user,
+            academic_year='2024-2025'  # ИСПРАВЛЕНО
+        ).select_related('class_group')
+        
+        # Получаем классы, где учитель ведет предметы
+        taught_classes = ClassSubjectTeacher.objects.filter(
+            teacher=user
+        ).select_related('class_group', 'subject')
+        
+        # Объединяем классы (убираем дубликаты)
+        my_classes = set()
+        for ct in managed_classes:
+            my_classes.add(ct.class_group)
+        for ct in taught_classes:
+            my_classes.add(ct.class_group)
+        
         # Мои уроки
         my_lessons = Lesson.objects.filter(teacher=user)
         total_lessons = my_lessons.count()
         
-        # Мои классы
-        my_classes = SchoolClass.objects.filter(
-            lessons__teacher=user
-        ).distinct()
-        
-        # Ученики
+        # Ученики (только из классов учителя)
         total_students = User.objects.filter(
             role='student',
             student_classes__class_group__in=my_classes
@@ -71,48 +89,6 @@ def dashboard(request):
             'pending_homeworks': pending_homeworks,
         }
         return render(request, 'users/teacher_dashboard.html', context)
-    
-    elif user.is_student():
-        # Статистика для ученика
-        # Мои классы
-        my_classes = SchoolClass.objects.filter(
-            students__student=user
-        )
-        
-        # Мои оценки
-        my_grades = Grade.objects.filter(student=user)
-        avg_grade = my_grades.aggregate(Avg('grade'))['grade__avg'] or 0
-        
-        # Посещаемость
-        my_attendances = Attendance.objects.filter(student=user)
-        total = my_attendances.count()
-        present = my_attendances.filter(status='present').count()
-        attendance_rate = round(present / total * 100) if total > 0 else 0
-        
-        # Ближайшие уроки
-        upcoming_lessons = Lesson.objects.filter(
-            class_group__in=my_classes,
-            date__gte=timezone.now().date()
-        ).order_by('date', 'start_time')[:5]
-        
-        # Активные домашние задания
-        active_homeworks = Homework.objects.filter(
-            lesson__class_group__in=my_classes,
-            due_date__gte=timezone.now()
-        ).exclude(
-            submissions__student=user
-        ).select_related('lesson', 'lesson__subject')[:5]
-        
-        context = {
-            'school': school,
-            'my_classes': my_classes,
-            'my_grades': my_grades[:5],
-            'avg_grade': avg_grade,
-            'attendance_rate': attendance_rate,
-            'upcoming_lessons': upcoming_lessons,
-            'active_homeworks': active_homeworks,
-        }
-        return render(request, 'users/student_dashboard.html', context)
     
     else:  # admin
         # Статистика для админа

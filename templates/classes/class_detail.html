@@ -85,17 +85,17 @@
                             <tr>
                                 <th>#</th>
                                 <th>ФИО</th>
-                                <th>Дата рождения</th>
+                                <th>Имя пользователя</th>
                                 <th>Телефон</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for student_class in students %}
+                            {% for sc in students %}
                             <tr>
                                 <td>{{ forloop.counter }}</td>
-                                <td>{{ student_class.student.get_full_name }}</td>
-                                <td>{{ student_class.student.date_of_birth|default:"—" }}</td>
-                                <td>{{ student_class.student.phone|default:"—" }}</td>
+                                <td>{{ sc.student.get_full_name }}</td>
+                                <td>{{ sc.student.username }}</td>
+                                <td>{{ sc.student.phone|default:"—" }}</td>
                             </tr>
                             {% empty %}
                             <tr>
