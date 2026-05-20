@@ -7,7 +7,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .models import User
-from administration.models import School, Class as SchoolClass
+from administration.models import School, Class as SchoolClass  # Добавлен SchoolClass
 from classes.models import Lesson
 from control.models import Grade, Attendance, Homework, HomeworkSubmission
 
@@ -18,35 +18,16 @@ def dashboard(request):
     school = School.objects.first()
     
     if user.is_teacher():
-        from classes.models import Lesson
-        from control.models import Grade, HomeworkSubmission, Attendance
-        from administration.models import ClassTeacher, ClassSubjectTeacher, Class as SchoolClass
-        from django.db.models import Avg
-        from django.utils import timezone
-        
-        # Получаем классы, где учитель является классным руководителем
-        managed_classes = ClassTeacher.objects.filter(
-            teacher=user,
-            academic_year='2024-2025'  # ИСПРАВЛЕНО
-        ).select_related('class_group')
-        
-        # Получаем классы, где учитель ведет предметы
-        taught_classes = ClassSubjectTeacher.objects.filter(
-            teacher=user
-        ).select_related('class_group', 'subject')
-        
-        # Объединяем классы (убираем дубликаты)
-        my_classes = set()
-        for ct in managed_classes:
-            my_classes.add(ct.class_group)
-        for ct in taught_classes:
-            my_classes.add(ct.class_group)
-        
-        # Мои уроки
+        # Статистика для учителя
         my_lessons = Lesson.objects.filter(teacher=user)
         total_lessons = my_lessons.count()
         
-        # Ученики (только из классов учителя)
+        # Мои классы
+        my_classes = SchoolClass.objects.filter(
+            lessons__teacher=user
+        ).distinct()
+        
+        # Ученики
         total_students = User.objects.filter(
             role='student',
             student_classes__class_group__in=my_classes
@@ -89,6 +70,48 @@ def dashboard(request):
             'pending_homeworks': pending_homeworks,
         }
         return render(request, 'users/teacher_dashboard.html', context)
+    
+    elif user.is_student():
+        # Статистика для ученика
+        # Мои классы - используем импортированный SchoolClass
+        my_classes = SchoolClass.objects.filter(
+            students__student=user
+        )
+        
+        # Мои оценки
+        my_grades = Grade.objects.filter(student=user)
+        avg_grade = my_grades.aggregate(Avg('grade'))['grade__avg'] or 0
+        
+        # Посещаемость
+        my_attendances = Attendance.objects.filter(student=user)
+        total = my_attendances.count()
+        present = my_attendances.filter(status='present').count()
+        attendance_rate = round(present / total * 100) if total > 0 else 0
+        
+        # Ближайшие уроки
+        upcoming_lessons = Lesson.objects.filter(
+            class_group__in=my_classes,
+            date__gte=timezone.now().date()
+        ).order_by('date', 'start_time')[:5]
+        
+        # Активные домашние задания
+        active_homeworks = Homework.objects.filter(
+            lesson__class_group__in=my_classes,
+            due_date__gte=timezone.now()
+        ).exclude(
+            submissions__student=user
+        ).select_related('lesson', 'lesson__subject')[:5]
+        
+        context = {
+            'school': school,
+            'my_classes': my_classes,
+            'my_grades': my_grades[:5],
+            'avg_grade': avg_grade,
+            'attendance_rate': attendance_rate,
+            'upcoming_lessons': upcoming_lessons,
+            'active_homeworks': active_homeworks,
+        }
+        return render(request, 'users/student_dashboard.html', context)
     
     else:  # admin
         # Статистика для админа
@@ -145,7 +168,7 @@ def edit_profile(request):
         confirm_password = request.POST.get('confirm_password')
         if new_password and new_password == confirm_password:
             user.set_password(new_password)
-            update_session_auth_hash(request, user)  # Сохраняем сессию после смены пароля
+            update_session_auth_hash(request, user)
             messages.success(request, 'Пароль успешно изменен')
         
         user.save()
@@ -161,32 +184,3 @@ def handler404(request, exception):
 def handler500(request):
     """Обработчик ошибки 500"""
     return render(request, '500.html', status=500)
-@login_required
-def profile(request):
-    """Просмотр профиля"""
-    user = request.user
-    context = {'user': user}
-    
-    # Добавляем статистику для разных ролей
-    if user.is_teacher():
-        from classes.models import Lesson
-        from control.models import Grade
-        from django.db.models import Avg
-        
-        context['total_lessons'] = Lesson.objects.filter(teacher=user).count()
-        context['total_students'] = user.lessons_taught.values('class_group').distinct().count()
-        context['avg_grade'] = Grade.objects.filter(teacher=user).aggregate(Avg('grade'))['grade__avg'] or 0
-        
-    elif user.is_student():
-        from control.models import Grade, Attendance
-        from django.db.models import Avg
-        
-        context['avg_grade'] = Grade.objects.filter(student=user).aggregate(Avg('grade'))['grade__avg'] or 0
-        
-        attendances = Attendance.objects.filter(student=user)
-        total = attendances.count()
-        present = attendances.filter(status='present').count()
-        context['attendance_rate'] = round(present / total * 100) if total > 0 else 0
-        context['recent_grades'] = Grade.objects.filter(student=user).order_by('-date')[:5]
-    
-    return render(request, 'users/profile.html', context)
